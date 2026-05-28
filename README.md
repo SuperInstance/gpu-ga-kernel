@@ -24,8 +24,9 @@ Basis ordering (bitmap): `1, e1, e2, e12, e3, e13, e23, e123, e4, e14, e24, e124
   - Spherical linear interpolation (SLERP)
   - Application to multivectors and 3D vectors
 - **Conformal Embedding**
-  - Embed 3D Euclidean points as null vectors in Cl(3,1)
+  - Embed 2D Euclidean points as null vectors in Cl(3,1)
   - Extract Euclidean coordinates from conformal multivectors
+  - (True 3D conformal geometry requires Cl(4,1) with 32 floats)
 - **Reflection** in a hyperplane
 - **Projection / Rejection** onto a blade
 - **Batch Kernels** for all operations (GPU-parallel)

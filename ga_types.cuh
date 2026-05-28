@@ -292,29 +292,32 @@ __host__ __device__ inline Multivector mv_normalize(const Multivector& a) {
 // ============================================================================
 
 /**
- * Embed a 3D Euclidean point into Cl(3,1) conformal space.
+ * Embed a 2D Euclidean point into Cl(3,1) conformal space.
  *
- * This uses a 4D projective-conformal model where:
+ * Standard 2D CGA in Cl(3,1):
  *   n0  = 0.5*(e4 - e3)   (origin null vector)
  *   nInf = e3 + e4        (infinity null vector)
  *
  * The point is mapped to a null vector:
- *   P = x*e1 + y*e2 + z*n0 + 0.5*(x^2+y^2+z^2)*nInf
+ *   P = x*e1 + y*e2 + n0 + 0.5*(x^2+y^2)*nInf
  *
- * Note: In Cl(3,1) with 16 components, this provides a projective
- * conformal embedding. The Euclidean distance between two points
- * is recovered via the inner product.
+ * P^2 = 0 is guaranteed for all (x, y).
+ *
+ * Note: True 3D conformal geometry requires Cl(4,1) (32 floats).
+ * In this 16-float Cl(3,1) library, the conformal model is 2D.
+ * The z parameter, if provided, is ignored for conformal embedding.
  */
 __host__ __device__ inline Multivector conformal_embed(float x, float y, float z) {
+    (void)z; // 3D conformal requires Cl(4,1); z is ignored in this 2D model
     Multivector mv = mv_zero();
-    float half_norm_sq = 0.5f * (x*x + y*y + z*z);
-    // P = x*e1 + y*e2 + z*n0 + 0.5*r^2*nInf
-    // n0  = 0.5*(e4 - e3)  =>  coeff on e3: -z/2, coeff on e4: z/2
+    float half_norm_sq = 0.5f * (x*x + y*y);
+    // P = x*e1 + y*e2 + n0 + 0.5*r^2*nInf
+    // n0  = 0.5*(e4 - e3)  =>  coeff on e3: -0.5, coeff on e4: +0.5
     // nInf = e3 + e4       =>  coeff on e3: r^2/2, coeff on e4: r^2/2
     mv.v[E1] = x;
     mv.v[E2] = y;
-    mv.v[E3] = -0.5f * z + half_norm_sq;   // from n0 and nInf
-    mv.v[E4] =  0.5f * z + half_norm_sq;
+    mv.v[E3] = half_norm_sq - 0.5f;
+    mv.v[E4] = half_norm_sq + 0.5f;
     return mv;
 }
 
@@ -323,15 +326,14 @@ __host__ __device__ inline Multivector conformal_embed(const Vec3& p) {
 }
 
 /**
- * Extract the 3D Euclidean point from a conformal null vector.
- * Returns (x, y, z) by projecting out the n0/nInf components.
+ * Extract the 2D Euclidean point from a conformal null vector.
+ * Returns (x, y, 0) since the conformal model is 2D.
  */
 __host__ __device__ inline Vec3 conformal_extract(const Multivector& mv) {
     Vec3 p;
     p.x = mv.v[E1];
     p.y = mv.v[E2];
-    // z = coefficient difference: e4 - e3 gives z
-    p.z = mv.v[E4] - mv.v[E3];
+    p.z = 0.0f; // z is not part of the 2D conformal model
     return p;
 }
 

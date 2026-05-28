@@ -206,24 +206,30 @@ void test_rotor_slerp() {
 }
 
 void test_conformal_embed_roundtrip() {
-    Vec3 p(1.0f, 2.0f, 3.0f);
+    // 2D conformal roundtrip (z is not preserved in Cl(3,1) 2D CGA)
+    Vec3 p(1.0f, 2.0f, 0.0f);
     Multivector mv = conformal_embed(p);
     Vec3 q = conformal_extract(mv);
 
     ASSERT_NEAR(q.x, p.x, 1e-5f, "conformal roundtrip: x");
     ASSERT_NEAR(q.y, p.y, 1e-5f, "conformal roundtrip: y");
-    ASSERT_NEAR(q.z, p.z, 1e-5f, "conformal roundtrip: z");
+    ASSERT_NEAR(q.z, 0.0f, 1e-5f, "conformal roundtrip: z (2D model)");
+}
+
+void test_conformal_null_vector() {
+    // A conformally embedded 2D point must be a null vector (P^2 = 0)
+    Multivector mv = conformal_embed(1.0f, 2.0f, 0.0f);
+    Multivector sq = h_geometric_product(mv, mv);
+    ASSERT_NEAR(sq.v[SCALAR], 0.0f, 1e-4f, "conformal 2D point is null");
 }
 
 void test_conformal_inner_product_distance() {
-    // For two conformal points, the inner product captures geometry
+    // For two conformal points, P1·P2 = -0.5 * |p1-p2|^2
     Multivector p1 = conformal_embed(0.0f, 0.0f, 0.0f);
     Multivector p2 = conformal_embed(1.0f, 0.0f, 0.0f);
     Multivector ip = inner_product(p1, p2);
-    // The scalar part should relate to the distance
-    // In this 4D model: P1·P2 = x1*x2 + y1*y2 - (z1*r2^2 + z2*r1^2)/2
-    // For (0,0,0) and (1,0,0): result = 0 + 0 - (0*1 + 0*0)/2 = 0
-    ASSERT_NEAR(ip.v[SCALAR], 0.0f, 1e-4f, "conformal inner product origin-to-unit-x");
+    // |p1-p2|^2 = 1, so P1·P2 = -0.5
+    ASSERT_NEAR(ip.v[SCALAR], -0.5f, 1e-4f, "conformal inner product origin-to-unit-x");
 }
 
 void test_reflection() {
@@ -399,7 +405,8 @@ void test_batch_conformal_embed_extract() {
     for (int i = 0; i < N; ++i) {
         ASSERT_NEAR(h_out_x[i], h_x[i], 1e-4f, ("batch_embed_extract x [" + std::to_string(i) + "]").c_str());
         ASSERT_NEAR(h_out_y[i], h_y[i], 1e-4f, ("batch_embed_extract y [" + std::to_string(i) + "]").c_str());
-        ASSERT_NEAR(h_out_z[i], h_z[i], 1e-4f, ("batch_embed_extract z [" + std::to_string(i) + "]").c_str());
+        // z is not preserved in 2D conformal model
+        ASSERT_NEAR(h_out_z[i], 0.0f, 1e-4f, ("batch_embed_extract z [" + std::to_string(i) + "]").c_str());
     }
 
     cudaFree(d_x); cudaFree(d_y); cudaFree(d_z); cudaFree(d_mv);
@@ -511,6 +518,7 @@ int main() {
     RUN_TEST(test_rotor_identity);
     RUN_TEST(test_rotor_slerp);
     RUN_TEST(test_conformal_embed_roundtrip);
+    RUN_TEST(test_conformal_null_vector);
     RUN_TEST(test_conformal_inner_product_distance);
     RUN_TEST(test_reflection);
     RUN_TEST(test_projection);
