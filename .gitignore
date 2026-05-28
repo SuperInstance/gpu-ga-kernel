@@ -1,0 +1,6 @@
+*.o
+*.a
+test_bench
+*.exe
+*.ptx
+*.cubin
