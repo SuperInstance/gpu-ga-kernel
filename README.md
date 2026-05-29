@@ -101,3 +101,5 @@ launch_batch_geometric_product(d_a, d_b, d_out, N);
 ## License
 
 MIT
+
+Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance/OpenConstruct) ecosystem.
