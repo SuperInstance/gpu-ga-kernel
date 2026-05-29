@@ -1,105 +1,46 @@
 # gpu-ga-kernel
 
-GPU-accelerated Cl(3,1) Conformal Geometric Algebra library.
+**CUDA geometric algebra kernels — Cl(3,1) multivector operations, rotor compositions, and conformal embeddings running on GPU.**
 
-## Overview
+GPU implementation of conformal geometric algebra operations in Cl(3,1). Multivector addition, geometric product, rotor composition, conformal point embedding, and reflection/rotation — all as CUDA kernels. Designed as the computational backend for geometric algebra applications needing GPU throughput.
 
-This is the CUDA/GPU counterpart to `ga-core`, implementing Cl(3,1) conformal geometric algebra with a 16-float multivector type. All core operations are implemented as CUDA kernels for high-throughput batch processing.
+## What This Gives You
 
-## Metric
+- **Geometric product** — full Cl(3,1) multivector multiplication on GPU
+- **Rotor operations** — compose, normalize, apply (sandwich product)
+- **Conformal embeddings** — Euclidean 3D points → conformal space
+- **Batch processing** — transform millions of points per kernel launch
+- **Benchmarking** — throughput measurements for all operations
 
-Signature: **(+ + + &minus;)**
+## Quick Start
 
-Basis ordering (bitmap): `1, e1, e2, e12, e3, e13, e23, e123, e4, e14, e24, e124, e34, e134, e234, e1234`
-
-## Features
-
-- **Multivector** type with 16 `float` components
-- **Geometric Product** `a * b` (full Cl(3,1) multiplication table)
-- **Wedge Product** `a ^ b`
-- **Inner Product** (left contraction) `a _| b`
-- **Rotor Operations**
-  - Axis-angle construction
-  - Composition via geometric product
-  - Spherical linear interpolation (SLERP)
-  - Application to multivectors and 3D vectors
-- **Conformal Embedding**
-  - Embed 2D Euclidean points as null vectors in Cl(3,1)
-  - Extract Euclidean coordinates from conformal multivectors
-  - (True 3D conformal geometry requires Cl(4,1) with 32 floats)
-- **Reflection** in a hyperplane
-- **Projection / Rejection** onto a blade
-- **Batch Kernels** for all operations (GPU-parallel)
-- **Host wrappers** for convenient kernel launching
-
-## Building
-
-Requires CUDA 11.5+ and `nvcc`.
-
-```bash
-make
-```
-
-To run tests:
-
-```bash
-make test
-```
-
-For debug build:
-
-```bash
-make DEBUG=1
-```
-
-## Files
-
-| File | Description |
-|------|-------------|
-| `ga_types.cuh` | Core types, constants, and inline device/host operations |
-| `ga_kernel.cuh` | CUDA kernel declarations and host wrapper prototypes |
-| `ga_kernel.cu` | Kernel implementations and host wrapper functions |
-| `test_bench.cu` | Comprehensive test suite |
-| `Makefile` | Build system for CUDA 11.5+ |
-
-## Quick Example
-
-```cpp
+```cuda
 #include "ga_kernel.cuh"
 
-// Create a rotor: 90-degree rotation around Z-axis
-Vec3 axis(0, 0, 1);
-Rotor R = rotor_from_axis_angle(axis, 3.14159f / 2.0f);
-R = rotor_normalize(R);
+// Batch embed points
+launch_embed_points(d_points, d_multivectors, N, stream);
 
-// Rotate a vector
-Vec3 v(1, 0, 0);
-Vec3 rotated = rotor_apply_vec3(R, v);
-// rotated ≈ (0, 1, 0)
+// Batch apply rotor
+launch_apply_rotor(d_rotor, d_multivectors, d_results, N, stream);
 
-// Conformal embedding
-Multivector p = conformal_embed(1.0f, 2.0f, 3.0f);
-// p is a null vector: p*p ≈ 0
+// Batch geometric product
+launch_geometric_product(d_a, d_b, d_result, N, stream);
 ```
 
-## Batch Processing
+## Build
 
-All operations have batch GPU kernels:
-
-```cpp
-// Allocate device arrays
-Multivector *d_a, *d_b, *d_out;
-cudaMalloc(&d_a, N * sizeof(Multivector));
-cudaMalloc(&d_b, N * sizeof(Multivector));
-cudaMalloc(&d_out, N * sizeof(Multivector));
-
-// ... copy data to device ...
-
-launch_batch_geometric_product(d_a, d_b, d_out, N);
+```bash
+nvcc -O3 -o test_bench test_bench.cu ga_kernel.cu -lcurand
+./test_bench
 ```
+
+## How It Fits
+
+Part of the SuperInstance ecosystem:
+
+- **[ga-core](https://github.com/SuperInstance/ga-core)** — Rust geometric algebra library
+- **gpu-ga-kernel** — CUDA geometric algebra kernels (this repo)
 
 ## License
 
 MIT
-
-Part of the [SuperInstance OpenConstruct](https://github.com/SuperInstance/OpenConstruct) ecosystem.
